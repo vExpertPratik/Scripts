@@ -1,0 +1,39 @@
+#This VBA will allow you to store the multiple line output in single excel workboot cell on older version of Microsoft Office
+#Please reach out to me on pratikit86@gmail.com in case you want further help on this
+
+=LOOKUP(2,1/SEARCH(Find_text,Within_Text),Result_Vector)
+
+==============================================================================================================================
+'Name the UDF and declare arguments and data types
+Function Lookup_concat(Search_string As String, _
+  Search_in_col As Range, Return_val_col As Range)
+ 
+'Dimension variables and declare data types
+Dim i As Long, result As String
+Dim Search_strings, Value As Variant
+ 
+'Split string using a delimiting character and return an array of values
+Search_strings = Split(Search_string, ";" & vbLf)
+ 
+'Iterate through values in array
+For Each Value In Search_strings
+ 
+    'Iterate through from 1 to the number of cells in Search_in_col
+    For i = 1 To Search_in_col.Count
+ 
+      'Check if cell value is equal to value in variable Value
+      If Search_in_col.Cells(i, 1) = Value Then
+ 
+        'Save the corresponding return value to variable result
+        result = result & ", " & Return_val_col.Cells(i, 1).Value
+      End If
+ 
+    'Continue with next number
+    Next i
+ 
+'Continue with next value
+Next Value
+ 
+'Return values saved to result to worksheet
+Lookup_concat = Trim(result)
+End Function

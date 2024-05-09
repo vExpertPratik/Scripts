@@ -1,0 +1,23 @@
+If VM is not getting refreshed:
+
+Get-ClusterResource | where {$_.ownergroup -match "<VM_Name>" -and $_.resourcetype.name -eq 'virtual machine configuration'} | Update-ClusterVirtualMachineConfiguration
+
+#============================================================================================================================================================================#
+If "Host is not responding":
+Take RDP of the Host & check whether below 3 mentioned serices are started or not.
+
+1) Hyper-V Virtual Machine Management
+2) Windows Remote Management (WS-Management)
+3) System Center Virtual Machine Manager Agent
+
+#============================================================================================================================================================================#
+
+If VM status is stuck in "Migration Failed":
+
+Right click on VM
+Click on repair
+select "Ignore" -> Click "OK"
+
+Once Repair action is done. Now refresh the VM & VM is up & running fine.
+
+#============================================================================================================================================================================#

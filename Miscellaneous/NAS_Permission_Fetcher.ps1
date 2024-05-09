@@ -1,0 +1,3 @@
+#This will allow you to fetch all the folder of the Shared NAS Drives recursively 
+
+dir "<Path of the NAS Drive>" | where { $_.PsIsContainer } | % { $path1 = $_.fullname; Get-Acl $_.Fullname | % { $_.access | where { $_.IdentityReference -like "<Domain_Name>\*" }}} | Select-Object @{Name = 'Share Path'; Expression={$path1}}, FileSystemRights, AccessControlType, IdentityReference | Export-Csv "<Path of the CSV file which will save the output of the script>" -NoTypeInformation -Append

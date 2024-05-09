@@ -1,0 +1,1 @@
+Get-WmiObject Win32_OperatingSystem -ComputerName "Remote_Machine_Name" | Select PSComputerName, Caption, OSArchitecture, Version, BuildNumber | FL

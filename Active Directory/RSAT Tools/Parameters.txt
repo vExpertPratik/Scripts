@@ -1,0 +1,14 @@
+Get-ExecutionPolicy
+Set-ExecutionPolicy Bypass
+
+======================================================================================================================================
+
+The script comes with 5 options:
+
+-All (-All is installing ALL the features within the RSAT bundle)
+-Basic (-Basic is only installing AD DS, DHCP, DNS, Group Policy Management and Server Manager)
+-ServerManager (-ServerManager is only installing the Server Manager)
+-Uninstall (-Uninstall removes all RSAT features again)
+-DisableWSUS ( -DisableWSUS will disable and re-enable WSUS in the process of installing RSAT)
+
+======================================================================================================================================
