@@ -1,3 +1,5 @@
+#This Script will help to install the Sysmon agent on multiple server remotely
+
 $DCs = Get-Content -Path "<Path of the TXT file which contains list of server>"
 
 foreach($DC in $DCs)
