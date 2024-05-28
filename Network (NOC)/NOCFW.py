@@ -12,7 +12,7 @@ with open('<Path of the TXT file which contains list of server (Use \\ instead o
 for devices in device_list:
 
 	ip_address = devices
-	firewall = {'device_type': 'fortinet', 'ip': ip_address, 'username': 'pratik', 'password': 'Newuser@123'}
+	firewall = {'device_type': 'fortinet', 'ip': ip_address, 'username': '<username>', 'password': '<Password>'}
 
 	timestr = time.strftime("%Y%m%d")
 
