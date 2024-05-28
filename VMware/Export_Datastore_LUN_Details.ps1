@@ -1,5 +1,5 @@
 #This PowerCLI Script will allow you to fetch datastore name, NAA ID, Runtime Name (LUN Details), HBA MAC of all the available datastores mapped with respective ESXi Host
-#Get-VMHost vaaesxbufl84.apdc.mgmt.axa-tech.intraxa | Get-Datastore | Get-ScsiLun | Select-Object -Property *
+#Get-VMHost <ESXi Hostname> | Get-Datastore | Get-ScsiLun | Select-Object -Property *
 
 Add-PSSnapin VMware.VimAutomation.Core
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
