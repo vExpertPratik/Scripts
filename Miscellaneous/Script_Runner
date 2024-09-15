@@ -1,0 +1,13 @@
+1) Create a Bash File
+2) update the details in below format
+
+<PowerShell Path> -ExecutionPolicy bypass -File <File Path>
+
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -executionpolicy bypass -file "V:\Pratik_Rane\Show_Data.ps1"
+
+
+
+Open iExpress (Run as Administrator)
+Give suitable Name as 'Package title'
+Select the respective file
+Mention Installed program to Launch as "powershell.exe -ExecutionPolicy Bypass -File Show_Commission_Sheet_Data.ps1"
