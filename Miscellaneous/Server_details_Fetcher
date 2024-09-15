@@ -1,0 +1,273 @@
+$servers = ""
+
+ 
+
+$outputfile = "C:\TEMP\$servers.htm"
+$Head = @"
+
+<style>
+  body {
+    font-family: "Times New Roman";
+    font-size: 9pt;
+    color: #000000;
+    }
+  th, td { 
+    border: 1px solid #330000;
+    border-collapse: collapse;
+    padding: 10px;
+    }
+  th {
+    font-size: 1.5em;
+    text-align: left;
+    background-color: #2397c2;
+    color: #ffffff;
+    }
+  td {
+    color: #000000;
+    }
+  .even { background-color: #ffffff; }
+  .odd { background-color: #bfbfbf; }
+</style>
+
+"@
+
+ 
+
+
+#----------------System Properties------------------#
+$Data = @()
+Foreach ($Server in $Servers ) {
+    Write-Host "Retrieving System Properties for $Server " -ForegroundColor Green
+foreach($Res in (Get-CimInstance win32_computersystem | select -Property Name, Domain, NumberOfLogicalProcessors, NumberOfProcessors, TotalPhysicalMemory, 
+Manufacturer
+)){
+$Data += New-Object PSObject -Property @{
+'Servername' = $Res.Name
+'Domain' = $Res.Domain
+'Windowsproductname' = $Res.Windowsproductname
+'LogicalProcessors' = $Res.NumberofLogicalProcessors
+'Processors' = $res.Processors
+'No.ofProcessors' = $Res.numberofprocessors
+'MemorySizeGB' = [math]::round($res.TotalphysicalMemory/1024/1024/1024)
+'FreeMemoryGB' = [math]::round($Res.OsFreephysicalMemory/1024/1024)
+'PageFile'=$res.OSPagingFiles
+'PageFileSize' = $res.OSSizestoredInPagingFiles
+'PageFilefreesize' = $res.OsFreespaceInpagingFiles
+'Bootuptime'=$res.OsLastBootuptime
+'Manufacturer' = $res.Manufacturer
+
+}
+}
+}
+$output = $Data | ConvertTo-Html -Head $Head -PreContent "<H1> System Properties </H1>" -Property Servername, Domain, LogicalProcessors, No.ofProcessors, MemorySizeGB, Manufacturer | Out-File -FilePath $outputfile
+#---------------------------------------------------#
+
+ 
+
+
+#----------------Network Config-----------------#
+
+$Data4 = @()
+Foreach($server in $servers){
+    Write-Host "Retrieving Network Config for $Server " -ForegroundColor Green
+    foreach($Res4 in (Get-WmiObject win32_networkadapterconfiguration | ?{$_.IPEnabled -eq "True"} | select -Property Pscomputername, Description, @{N="DNSDomain";e={$_.DNSDomain}}, @{N="DNSServerSearchOrder";e={$_.DNSServerSearchOrder}}, @{N="IPaddress";e={$_.IPaddress}}, 
+    @{N="IPsubnet";e={$_.IPsubnet}}, @{N="DefaultIPGateway";e={$_.DefaultIPGateway}})){
+    $Data4 += New-Object psobject -Property @{
+    'Server' = $res4.Pscomputername
+    'DNSIP' = $res4.DNSServerSearchOrder
+    'DNSname'= $res4.DNSDomain
+    'InterfaceDescription' = $res4.Description
+    'IPAddress' = $res4.IPaddress
+    'Subnet'=$res4.IPsubnet
+    'Gateway'=$res4.DefaultIPGateway
+    }
+    }
+    }
+$output4= $Data4 | ConvertTo-Html -Head $Head -PreContent "<H1> Network Configuration </H1>" -Property Server, DNSIP, DNSname, InterfaceDescription, IPAddress,Subnet,Gateway | 
+Out-File -FilePath $outputfile -Append
+#---------------------------------------------------#
+
+#----------------Disk Properties------------------#
+$Data3 = @()
+Foreach ($Server in $Servers ) {
+    Write-Host "Retrieving Disk Properties for $Server " -ForegroundColor Green
+foreach($Res3 in (Get-WmiObject win32_logicalDisk | ?{$_.Drivetype -eq 3} | select PscomputerName, DeviceID, VolumeName, @{N="Capacity";E={$_.Size/1GB -as [int]}}, @{N="Freespace";E={[math]::truncate($_.Freespace/1GB)}}, @{N="FreePrecent";E={"{0:P0}" -f($_.Freespace/$_.size)}})){
+$Data3 += New-Object PSObject -Property @{
+'Servername' = $Res3.PscomputerName
+'Drive' = $Res3.DeviceID
+'Volume' = $Res3.VolumeName
+'CapacityGB' = $Res3.Capacity
+'FreeSpace' = $Res3.Freespace
+'Free%' = $res3.FreePrecent
+
+}
+}
+}
+
+$output3 = $Data3 | ConvertTo-Html -PreContent "<H1> Disk Details </H1>"  -Head $Head -Property Servername, Drive, Volume , CapacityGB, Freespace, Free% |
+Out-File -FilePath $outputfile -Append
+#---------------------------------------------------#
+
+#----------------------Local Access----------------#
+$Data7 = @()
+Foreach ($Server in $Servers ) {
+    Write-Host "Retrieving Local group for $Server " -ForegroundColor Green
+
+ 
+
+    $strComputer = $server
+Write-Host "Computer: $strComputer"
+$computer = [ADSI]"WinNT://$strComputer"
+$objCount = ($computer.psbase.children | measure-object).count
+Write-Host "Q-ty objects for computer '$strComputer' = $objCount"
+$Counter = 1
+$result = @()
+foreach($adsiObj in $computer.psbase.children)
+{
+  switch -regex($adsiObj.psbase.SchemaClassName)
+    {
+      "group"
+      {
+        $group = $adsiObj.name
+        $LocalGroup = [ADSI]"WinNT://$strComputer/$group,group"
+        $Members = @($LocalGroup.psbase.Invoke("Members"))
+        $objCount = ($Members | measure-object).count
+        Write-Host "Q-ty objects for group '$group' = $objCount"
+        $GName = $group.tostring()
+
+ 
+
+        ForEach ($Member In $Members) {
+          $Name = $Member.GetType().InvokeMember("Name", "GetProperty", $Null, $Member, $Null)
+          $Path = $Member.GetType().InvokeMember("ADsPath", "GetProperty", $Null, $Member, $Null)
+          Write-Host " Object = $Path"
+
+ 
+
+                   $isGroup = ($Member.GetType().InvokeMember("Class", "GetProperty", $Null, $Member, $Null) -eq "group")
+          If (($Path -like "*/$strComputer/*") -Or ($Path -like "WinNT://NT*")) { $Type = "Local"
+          } Else {$Type = "Domain"}
+          $result += New-Object PSObject -Property @{
+            Computername = $strComputer
+            NameMember = $Name
+            PathMember = $Path
+            TypeMemeber = $Type
+            ParentGroup = $GName
+            isGroupMemeber = $isGroup
+            Depth = $Counter
+          }
+        }
+      }
+    } #end switch
+} #end foreach
+Write-Host "Total objects = " ($result | measure-object).count
+$result7 = $result | select-object Computername, ParentGroup, NameMember, TypeMemeber
+
+ 
+
+
+
+}
+
+$output7 = $result7  | ConvertTo-Html -PreContent "<H1> Local Access </H1>"  -Head $Head -Property Computername, ParentGroup, NameMember, TypeMemeber |Out-File -FilePath $outputfile -Append
+#-----------------------------------------------#
+
+#------------------Static Route---------------------#
+$Data5 = @()
+foreach($server in $servers){
+Write-Host "Retrieving Static Route for $Server " -ForegroundColor Green
+foreach($res5 in (Get-WmiObject win32_IP4RouteTable -Property * | select -Property Pscomputername, Destination, Name, Nexthop, Interfaceindex, Metric1 ))
+{
+    $Data5 += New-Object psobject -Property @{
+    'Destination' = $res5.Destination
+    'Gateway' = $res5.Nexthop
+    'Interface' = $res5.Name
+    'InterfaceIndex'= $res5.Interfaceindex
+    'Metric' = $res5.Metric1
+    }
+    }
+    }
+$output5 = $Data5 | ConvertTo-Html -Head $Head -PreContent "<H1> Static route </H1>" -Property Destination, Gateway, Interface, InterfaceIndex, Metric | 
+Out-File -FilePath $outputfile -Append
+#------------------------------------------------------#
+
+#------------------persistent Route---------------------#
+$Data8 = @()
+foreach($server in $servers){
+Write-Host "Retrieving persistance Route for $Server " -ForegroundColor Green
+foreach($res8 in (Get-WmiObject win32_IP4PersistedRouteTable -Property *  | select -Property Pscomputername, Destination, Name, Nexthop, Interfaceindex, Metric1 ))
+{
+    $Data8 += New-Object psobject -Property @{
+    'Destination' = $res8.Destination
+    'Gateway' = $res8.Nexthop
+    'Interface' = $res8.Name
+    'InterfaceIndex'= $res8.Interfaceindex
+    'Metric' = $res8.Metric1
+    }
+    }
+    }
+$output8 = $Data8 | ConvertTo-Html -Head $Head -PreContent "<H1> PersistedRouteTable </H1>" -Property Destination, Gateway, Interface, InterfaceIndex, Metric | 
+Out-File -FilePath $outputfile -Append
+#------------------------------------------------------#
+
+
+#----------------------Netstat----------------------#
+$Data6 = @()
+foreach($server in $servers){
+Write-Host "Retrieving Netstat for $Server " -ForegroundColor Green
+foreach($res6 in (Get-NetTCPConnection | select Localaddress, Localport, Remoteaddress, remoteport, state, Owningprocess))
+{
+    $Data6 += New-Object psobject -Property @{
+    'Localaddress' = $res6.Localaddress
+    'Localport' = $res6.Localport
+    'Remoteaddress' = $res6.Remoteaddress
+    'remoteport'= $res6.remoteport
+    'state' = $res6.state
+    'Owningprocess' = $res6.Owningprocess
+    }
+    }
+    }
+$output6 = $Data6 | ConvertTo-Html -Head $Head -PreContent "<H1> NETSTAT </H1>" -Property Localaddress, Localport, Remoteaddress, remoteport, state, Owningprocess | 
+Out-File -FilePath $outputfile -Append
+#-------------------------------------------------#
+
+
+
+
+#----------------Installed Products-----------------#
+$Data2 = @()
+Foreach($server in $servers){
+    Write-Host "Retrieving Installed Products for $Server " -ForegroundColor Green
+    foreach($Res2 in (Get-WmiObject win32_product | select -Property *)){
+    $Data2 += New-Object psobject -Property @{
+    'Server' = $Res2.PscomputerName
+    'Name' = $Res2.Name
+    'Version' = $Res2.Version
+    'InstalledDate' = $Res2.InstallDate
+    }
+    }
+    }
+$output2= $Data2 | ConvertTo-Html -Head $Head -PreContent "<H1> Installed Products </H1>" -Property Server, Name, Version, InstalledDate | 
+Out-File -FilePath $outputfile -Append
+#---------------------------------------------------#
+
+
+
+
+#----------------Service Status---------------------#
+$Data1 = @()
+Foreach ($Server in $Servers ) {
+    Write-Host "Retrieving Service Status for $Server " -ForegroundColor Green
+    foreach($Res1 in (Get-WmiObject win32_service )){
+  $Data1 += New-Object PSObject -Property @{
+'Server'= $res1.Pscomputername
+'Name' = $Res1.Name
+'DisplayName' = $Res1.DisplayName
+'StartMode' = $Res1.StartMode
+'Status' = $Res1.State
+}
+}
+}
+$output1= $Data1 | ConvertTo-Html -Head $Head -PreContent "<H1> Service Status </H1>" -Property Server, Name, DisplayName, StartMode, Status | 
+Out-File -FilePath $outputfile -Append
+#---------------------------------------------------#
